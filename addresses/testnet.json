@@ -1,0 +1,33 @@
+{
+  "chainId": 6281971,
+  "name": "DogeOS Chikyu Testnet",
+  "rpc": "https://rpc.testnet.dogeos.com",
+  "explorer": "https://dogeos-testnet.l2scan.co",
+  "note": "New launches use DogLaunchFactoryV3. Tokens from older versions keep trading on DogLaunchFactoryV2 / DogLaunchFactory; the REST API field `version` tells which.",
+  "contracts": {
+    "WDOGE": "0xbDdd7B9b9C6EF14aC988D51215c17b2269dFBBE2",
+    "DogLaunchFactoryV3": "0x2e83386Ac61488b21106eBD37a778020bD8cD76b",
+    "DogTokenRegistryV3": "0x805BB6B8B25f535E4bFB12e68E760f2E25Fa1D4D",
+    "DogMemeTokenDeployerV3": "0xc6e1AA386ccd3037829a8BC743B0E0385cB8e619",
+    "DogLockerV3": "0x548DDa563982595F53CB5bbc4bF25acC30158B19",
+    "DogLensV3": "0x4a09146A69e3c5C64FCd1f723Ae4D4c67CD04671",
+    "DogQuoterV3": "0x748da9A994439b343b248e4ad4E271871f682E45",
+    "DogSwapFactoryV3": "0x66efa78070467703e9763350FFC75ee34f6Df424",
+    "DogSwapRouterV3": "0xDe80e19E1Df8F2218E3f83B176404213560AA718",
+    "DogOrdersV3": "0x266e996Bec6Bc3dD88Eb2c658b523D72BF1bed45",
+    "DogSessionVaultV3": "0x40Df30eC396eFde84d31d0854DEE5e6eDB536003",
+    "DogGiftsV3": "0x24E2617b601C54256cD2AB486ACE2659B5E2b831",
+    "DogSwapFactory": "0xf1dCcf13d7AA31A5c05575a10Ca7e0C78FD592f0",
+    "DogSwapRouter": "0x0CFfe65065c582377374e00498a015D8C3701aA3",
+    "DogSwapOpenFactory": "0x6D2A82806b56a2A52665a955B48E099e709A8a8e",
+    "DogSwapOpenRouter": "0x72e1Df22884a60B09C572402ee676b61DF3c65A5",
+    "DogSwapAggregator": "0x79029E9d79ddF7F0A14FFd93810F9d3852DEC359",
+    "DogSwapOrders": "0x7947038bBD095B2B06eaE8DA4357343aB98CB759",
+    "DogLPLocker": "0x397A8929ca8caa6223B0f3F0e6A8826145884896",
+    "DogLaunchFactoryV2": "0x0b8BD324E5128ecA1E0f1D99d3dd0FF5dD36A70C",
+    "DogTokenRegistryV2": "0x7818B761BE058a3326B7b1B127922dD369f08671",
+    "DogSwapFactoryV2": "0xCfa7AB8B3531Dbd99f2e57cB115A8B3835AFCB69",
+    "DogSwapRouterV2": "0xE12D010892bEceeE9bEb1d4D25442a4a59d5FD9A",
+    "DogLaunchFactory": "0xb38e6EC05C4f99D1604906501406aB84E2297d25"
+  }
+}

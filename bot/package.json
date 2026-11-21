@@ -1,0 +1,15 @@
+{
+  "name": "dogstarter-sample-bot",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "start": "tsx bot.ts"
+  },
+  "dependencies": {
+    "viem": "^2.21.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0"
+  }
+}

@@ -1,0 +1,440 @@
+[
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "aggregator",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "id",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "refund",
+        "type": "uint256"
+      }
+    ],
+    "name": "Cancelled",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "id",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "keeper",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "amountIn",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "amountOut",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "tip",
+        "type": "uint256"
+      }
+    ],
+    "name": "Filled",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "id",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "owner",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "tokenIn",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "tokenOut",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "chunk",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "trigger",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "minOut",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "bool",
+        "name": "above",
+        "type": "bool"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint32",
+        "name": "interval",
+        "type": "uint32"
+      }
+    ],
+    "name": "Placed",
+    "type": "event"
+  },
+  {
+    "inputs": [],
+    "name": "MAX_TIP_BPS",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "WDOGE",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "agg",
+    "outputs": [
+      {
+        "internalType": "contract IAgg",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "id",
+        "type": "uint256"
+      }
+    ],
+    "name": "cancel",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "id",
+        "type": "uint256"
+      }
+    ],
+    "name": "check",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "ready",
+        "type": "bool"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amountIn",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "expectedOut",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "id",
+        "type": "uint256"
+      }
+    ],
+    "name": "fill",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "out",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "id",
+        "type": "uint256"
+      }
+    ],
+    "name": "get",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "address",
+            "name": "owner",
+            "type": "address"
+          },
+          {
+            "internalType": "bool",
+            "name": "nativeIn",
+            "type": "bool"
+          },
+          {
+            "internalType": "bool",
+            "name": "nativeOut",
+            "type": "bool"
+          },
+          {
+            "internalType": "bool",
+            "name": "above",
+            "type": "bool"
+          },
+          {
+            "internalType": "bool",
+            "name": "open",
+            "type": "bool"
+          },
+          {
+            "internalType": "uint16",
+            "name": "tipBps",
+            "type": "uint16"
+          },
+          {
+            "internalType": "uint32",
+            "name": "interval",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint64",
+            "name": "nextAt",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint64",
+            "name": "expiresAt",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint256",
+            "name": "left",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "chunk",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "trigger",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "minOut",
+            "type": "uint256"
+          },
+          {
+            "internalType": "address[]",
+            "name": "path",
+            "type": "address[]"
+          },
+          {
+            "internalType": "uint8[]",
+            "name": "kinds",
+            "type": "uint8[]"
+          }
+        ],
+        "internalType": "struct DogSwapOrders.Order",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "ordersLength",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "owner",
+        "type": "address"
+      }
+    ],
+    "name": "ordersOf",
+    "outputs": [
+      {
+        "internalType": "uint256[]",
+        "name": "",
+        "type": "uint256[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "components": [
+          {
+            "internalType": "address[]",
+            "name": "path",
+            "type": "address[]"
+          },
+          {
+            "internalType": "uint8[]",
+            "name": "kinds",
+            "type": "uint8[]"
+          },
+          {
+            "internalType": "uint256",
+            "name": "amount",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "chunks",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint32",
+            "name": "interval",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint256",
+            "name": "trigger",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "minOut",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bool",
+            "name": "above",
+            "type": "bool"
+          },
+          {
+            "internalType": "uint16",
+            "name": "tipBps",
+            "type": "uint16"
+          },
+          {
+            "internalType": "uint64",
+            "name": "expiresAt",
+            "type": "uint64"
+          },
+          {
+            "internalType": "bool",
+            "name": "nativeOut",
+            "type": "bool"
+          }
+        ],
+        "internalType": "struct DogSwapOrders.Params",
+        "name": "p",
+        "type": "tuple"
+      }
+    ],
+    "name": "place",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "id",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "payable",
+    "type": "function"
+  }
+]

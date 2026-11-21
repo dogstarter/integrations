@@ -1,0 +1,15 @@
+{
+  "name": "dogstarter-examples-ts",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "read": "tsx read.ts",
+    "buy-sell": "tsx buy-sell.ts"
+  },
+  "dependencies": {
+    "viem": "^2.21.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0"
+  }
+}

@@ -1,0 +1,1278 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Dogstarter public API",
+    "version": "1.0.0",
+    "summary": "Read-only data for the Dogstarter launchpad and DogSwap on DogeOS.",
+    "description": "Read-only REST API for terminals, bots and data sites. Every GET is public and works from any website (CORS open for reads).\n\nRate limits: without a key, 3000 reads per minute per IP. With a free API key (header `x-api-key`), the limit counts per key (12000 per minute by default). Every response carries `X-RateLimit-Limit`, `X-RateLimit-Remaining` and `X-RateLimit-Reset`; when the budget is spent the API answers 429 with `Retry-After`. Ask for a key in the Dogstarter Telegram community or by email.\n\nAmounts are numbers in whole units (DOGE, tokens), not wei, unless the field name says otherwise. Addresses are checksummed. Times are unix seconds.\n\nReal-time feed: WebSocket at `wss://api.dogstarter.dog/ws` (see https://dogstarter.dog/docs/integrate#ws).\n\nThe contracts are the source of truth. Check anything that moves money on-chain.",
+    "contact": {
+      "name": "Dogstarter",
+      "url": "https://dogstarter.dog/docs/integrate"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://api.dogstarter.dog",
+      "description": "DogeOS Chikyu testnet (today)"
+    }
+  ],
+  "security": [
+    {},
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Launchpad",
+      "description": "Tokens on the bonding curve and graduated tokens"
+    },
+    {
+      "name": "DogSwap",
+      "description": "Pools, swaps and prices on DogSwap"
+    },
+    {
+      "name": "Chart sites",
+      "description": "DexScreener-style adapter"
+    },
+    {
+      "name": "Account",
+      "description": "API key status"
+    }
+  ],
+  "paths": {
+    "/api/v1/tokens": {
+      "get": {
+        "tags": [
+          "Launchpad"
+        ],
+        "summary": "List tokens",
+        "description": "Board lists. `trending` ranks by recent activity (1 h volume and trades weigh most, then 6 h and 24 h volume and unique buyers), `new` by creation, `near` by curve progress, `graduated` by graduation time, `mcap` by market cap.",
+        "parameters": [
+          {
+            "name": "tab",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "trending",
+                "new",
+                "near",
+                "graduated",
+                "mcap",
+                "curve"
+              ],
+              "default": "new"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "description": "Search name, symbol or address",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 48,
+              "maximum": 200
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Tokens",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Token"
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooMany"
+          }
+        }
+      }
+    },
+    "/api/v1/tokens/{address}": {
+      "get": {
+        "tags": [
+          "Launchpad"
+        ],
+        "summary": "One token",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Address"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Token with holder count",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Token"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "holders": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Bad"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/v1/trades": {
+      "get": {
+        "tags": [
+          "Launchpad"
+        ],
+        "summary": "Latest trades",
+        "description": "Newest first. Curve trades and graduated-pool trades of launchpad tokens (`source`).",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/Address"
+            }
+          },
+          {
+            "name": "trader",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/Address"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 50,
+              "maximum": 200
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Trades",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Trade"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/candles": {
+      "get": {
+        "tags": [
+          "Launchpad"
+        ],
+        "summary": "Price candles of a token",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Address"
+            }
+          },
+          {
+            "name": "interval",
+            "in": "query",
+            "description": "Seconds per candle (minimum 15). Common: 60, 300, 900, 3600, 14400, 86400.",
+            "schema": {
+              "type": "integer",
+              "default": 60
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Candles, oldest first",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Candle"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Bad"
+          }
+        }
+      }
+    },
+    "/api/v1/holders/{address}": {
+      "get": {
+        "tags": [
+          "Launchpad"
+        ],
+        "summary": "Top holders of a token",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Address"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 20,
+              "maximum": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Holders, biggest first",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Holder"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/v1/koth": {
+      "get": {
+        "tags": [
+          "Launchpad"
+        ],
+        "summary": "Current King of the Hill",
+        "description": "The token with the highest market cap among tokens at 50% or more of their curve, or null.",
+        "responses": {
+          "200": {
+            "description": "Token or null",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/Token"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/stats": {
+      "get": {
+        "tags": [
+          "Launchpad"
+        ],
+        "summary": "Platform totals",
+        "responses": {
+          "200": {
+            "description": "Totals",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Stats"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/stats/detail": {
+      "get": {
+        "tags": [
+          "Launchpad"
+        ],
+        "summary": "Daily volume, fee split, funnel and records",
+        "responses": {
+          "200": {
+            "description": "Detail",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/dex/stats": {
+      "get": {
+        "tags": [
+          "DogSwap"
+        ],
+        "summary": "DogSwap totals",
+        "responses": {
+          "200": {
+            "description": "Totals",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DexStats"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/dex/pairs": {
+      "get": {
+        "tags": [
+          "DogSwap"
+        ],
+        "summary": "List pools",
+        "parameters": [
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "tvl",
+                "volume",
+                "apr",
+                "new",
+                "change"
+              ],
+              "default": "tvl"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 200,
+              "maximum": 500
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Pools",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Pair"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/dex/pairs/{pair}": {
+      "get": {
+        "tags": [
+          "DogSwap"
+        ],
+        "summary": "One pool with its latest trades, liquidity changes and top LPs",
+        "parameters": [
+          {
+            "name": "pair",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Address"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Pool",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Pair"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/v1/dex/candles": {
+      "get": {
+        "tags": [
+          "DogSwap"
+        ],
+        "summary": "Pool candles",
+        "parameters": [
+          {
+            "name": "pair",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Address"
+            }
+          },
+          {
+            "name": "interval",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 3600
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Candles, oldest first",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Candle"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Bad"
+          }
+        }
+      }
+    },
+    "/api/v1/dex/trending": {
+      "get": {
+        "tags": [
+          "DogSwap"
+        ],
+        "summary": "Trending pools",
+        "description": "Ranked by volume, number of different wallets and price move, so one wallet alone cannot push a pool to the top.",
+        "parameters": [
+          {
+            "name": "window",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "enum": [
+                300,
+                3600,
+                86400
+              ],
+              "default": 3600
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Pools",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Pair"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/dex/tokens/{address}": {
+      "get": {
+        "tags": [
+          "DogSwap"
+        ],
+        "summary": "A token's DOGE price and its pools",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Address"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "address": {
+                      "$ref": "#/components/schemas/Address"
+                    },
+                    "symbol": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "decimals": {
+                      "type": "integer"
+                    },
+                    "priceDoge": {
+                      "type": "number"
+                    },
+                    "tvl": {
+                      "type": "number"
+                    },
+                    "vol24": {
+                      "type": "number"
+                    },
+                    "pairs": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Pair"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/dex/scan/{address}": {
+      "get": {
+        "tags": [
+          "DogSwap"
+        ],
+        "summary": "Token scan",
+        "description": "Transfer test, buy and sell tax, owner powers.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Address"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Scan result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/dexscreener/latest-block": {
+      "get": {
+        "tags": [
+          "Chart sites"
+        ],
+        "summary": "Latest indexed block",
+        "responses": {
+          "200": {
+            "description": "Block",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "block": {
+                      "type": "object",
+                      "properties": {
+                        "blockNumber": {
+                          "type": "integer"
+                        },
+                        "blockTimestamp": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/dexscreener/asset": {
+      "get": {
+        "tags": [
+          "Chart sites"
+        ],
+        "summary": "Token name, symbol and supply",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Address"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Asset",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/dexscreener/pair": {
+      "get": {
+        "tags": [
+          "Chart sites"
+        ],
+        "summary": "Pool tokens, creation block and fee",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Address"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Pair",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/dexscreener/events": {
+      "get": {
+        "tags": [
+          "Chart sites"
+        ],
+        "summary": "Swaps, joins and exits with reserves",
+        "parameters": [
+          {
+            "name": "fromBlock",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "toBlock",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Events",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "events": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": true
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/key": {
+      "get": {
+        "tags": [
+          "Account"
+        ],
+        "summary": "Your limits",
+        "description": "Without a key: the public limits. With `x-api-key`: the key's name, limit and use.",
+        "responses": {
+          "200": {
+            "description": "Limits",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "key": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "readsPerMinute": {
+                      "type": "integer"
+                    },
+                    "wsConnections": {
+                      "type": "integer"
+                    },
+                    "per": {
+                      "type": "string",
+                      "enum": [
+                        "ip",
+                        "key"
+                      ]
+                    },
+                    "uses": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unknown or revoked key"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "Optional free key: a higher limit counted per key instead of per IP."
+      }
+    },
+    "parameters": {
+      "Address": {
+        "name": "address",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "$ref": "#/components/schemas/Address"
+        }
+      }
+    },
+    "responses": {
+      "Bad": {
+        "description": "Bad input",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "Not found",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "TooMany": {
+        "description": "Rate limit reached. Wait `Retry-After` seconds.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "Address": {
+        "type": "string",
+        "pattern": "^0x[0-9a-fA-F]{40}$",
+        "examples": [
+          "0x9F289983e8412a2AE4aa25A5520B6EeA10b6AA05"
+        ]
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          }
+        }
+      },
+      "Token": {
+        "type": "object",
+        "properties": {
+          "address": {
+            "$ref": "#/components/schemas/Address"
+          },
+          "creator": {
+            "$ref": "#/components/schemas/Address"
+          },
+          "quote": {
+            "$ref": "#/components/schemas/Address",
+            "description": "Quote token (WDOGE)"
+          },
+          "name": {
+            "type": "string"
+          },
+          "symbol": {
+            "type": "string"
+          },
+          "uri": {
+            "type": "string",
+            "description": "Metadata URI (IPFS or https)"
+          },
+          "metadata": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "Parsed metadata: name, symbol, description, image, links"
+          },
+          "pair": {
+            "$ref": "#/components/schemas/Address",
+            "description": "DogSwap pool (exists after graduation; known in advance)"
+          },
+          "total_supply": {
+            "type": "string",
+            "description": "In wei (18 decimals)"
+          },
+          "threshold": {
+            "type": "number",
+            "description": "DOGE the curve collects to graduate"
+          },
+          "virtual_quote": {
+            "type": "number"
+          },
+          "virtual_token": {
+            "type": "number"
+          },
+          "real_quote": {
+            "type": "number",
+            "description": "DOGE collected by the curve so far"
+          },
+          "price": {
+            "type": "number",
+            "description": "DOGE per token"
+          },
+          "market_cap": {
+            "type": "number",
+            "description": "DOGE, price x total supply"
+          },
+          "progress": {
+            "type": "number",
+            "description": "Curve progress, 0 to 100"
+          },
+          "volume": {
+            "type": "number"
+          },
+          "volume_24h": {
+            "type": "number"
+          },
+          "trades": {
+            "type": "integer"
+          },
+          "holders": {
+            "type": "integer"
+          },
+          "graduated": {
+            "type": "boolean"
+          },
+          "graduated_at": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "created_at": {
+            "type": "integer"
+          },
+          "start_at": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Scheduled opening time"
+          },
+          "fee_mode": {
+            "type": "integer",
+            "description": "0 wallet, 1 cashback, 2 holder rewards, 3 buy back + lock"
+          },
+          "tax_bps": {
+            "type": "integer",
+            "description": "Creator buy tax, basis points"
+          },
+          "sell_tax_bps": {
+            "type": "integer",
+            "description": "Creator sell tax, basis points"
+          },
+          "snipe_off": {
+            "type": "integer",
+            "description": "1 = snipe protection turned off"
+          },
+          "dev_buy_pct": {
+            "type": "number"
+          },
+          "change_1h": {
+            "type": "number"
+          },
+          "change_24h": {
+            "type": "number"
+          },
+          "block": {
+            "type": "integer"
+          },
+          "tx": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true
+      },
+      "Trade": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "token": {
+            "$ref": "#/components/schemas/Address"
+          },
+          "trader": {
+            "$ref": "#/components/schemas/Address"
+          },
+          "isBuy": {
+            "type": "boolean"
+          },
+          "quote_amount": {
+            "type": "number",
+            "description": "DOGE"
+          },
+          "token_amount": {
+            "type": "number"
+          },
+          "fee": {
+            "type": "number",
+            "description": "DOGE"
+          },
+          "price": {
+            "type": "number"
+          },
+          "market_cap": {
+            "type": "number"
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "curve",
+              "dex"
+            ]
+          },
+          "ts": {
+            "type": "integer"
+          },
+          "block": {
+            "type": "integer"
+          },
+          "tx": {
+            "type": "string"
+          },
+          "symbol": {
+            "type": "string"
+          },
+          "bot": {
+            "type": [
+              "integer",
+              "boolean"
+            ],
+            "description": "Testnet activity bot (not real users)"
+          }
+        },
+        "additionalProperties": true
+      },
+      "Candle": {
+        "type": "object",
+        "properties": {
+          "time": {
+            "type": "integer"
+          },
+          "open": {
+            "type": "number"
+          },
+          "high": {
+            "type": "number"
+          },
+          "low": {
+            "type": "number"
+          },
+          "close": {
+            "type": "number"
+          },
+          "volume": {
+            "type": "number",
+            "description": "DOGE"
+          }
+        }
+      },
+      "Holder": {
+        "type": "object",
+        "properties": {
+          "holder": {
+            "$ref": "#/components/schemas/Address"
+          },
+          "balance": {
+            "type": "number"
+          },
+          "percent": {
+            "type": "number"
+          }
+        },
+        "additionalProperties": true
+      },
+      "Stats": {
+        "type": "object",
+        "properties": {
+          "totalLaunched": {
+            "type": "integer"
+          },
+          "totalGraduated": {
+            "type": "integer"
+          },
+          "totalVolume": {
+            "type": "number"
+          },
+          "volume24h": {
+            "type": "number"
+          },
+          "totalTrades": {
+            "type": "integer"
+          },
+          "dogBurned": {
+            "type": "number"
+          },
+          "burnEvents": {
+            "type": "integer"
+          }
+        },
+        "additionalProperties": true
+      },
+      "DexStats": {
+        "type": "object",
+        "properties": {
+          "pairs": {
+            "type": "integer"
+          },
+          "tokens": {
+            "type": "integer"
+          },
+          "tvl": {
+            "type": "number"
+          },
+          "vol24": {
+            "type": "number"
+          },
+          "fees24": {
+            "type": "number"
+          },
+          "swaps24": {
+            "type": "integer"
+          }
+        }
+      },
+      "Pair": {
+        "type": "object",
+        "properties": {
+          "pair": {
+            "$ref": "#/components/schemas/Address"
+          },
+          "factory": {
+            "$ref": "#/components/schemas/Address"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "official",
+              "open",
+              "classic"
+            ],
+            "description": "official = graduated launchpad pool, open = community pool"
+          },
+          "token0": {
+            "$ref": "#/components/schemas/Address"
+          },
+          "token1": {
+            "$ref": "#/components/schemas/Address"
+          },
+          "t0": {
+            "type": "object",
+            "properties": {
+              "address": {
+                "type": "string"
+              },
+              "symbol": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "decimals": {
+                "type": "integer"
+              }
+            }
+          },
+          "t1": {
+            "type": "object",
+            "properties": {
+              "address": {
+                "type": "string"
+              },
+              "symbol": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "decimals": {
+                "type": "integer"
+              }
+            }
+          },
+          "reserve0": {
+            "type": "number"
+          },
+          "reserve1": {
+            "type": "number"
+          },
+          "price": {
+            "type": "number",
+            "description": "token1 per token0"
+          },
+          "price0Doge": {
+            "type": "number"
+          },
+          "price1Doge": {
+            "type": "number"
+          },
+          "tvl": {
+            "type": "number",
+            "description": "DOGE"
+          },
+          "vol24": {
+            "type": "number"
+          },
+          "swaps24": {
+            "type": "integer"
+          },
+          "change24": {
+            "type": "number"
+          },
+          "fees24": {
+            "type": "number"
+          },
+          "apr": {
+            "type": "number",
+            "description": "Estimate from recent fees, not a promise"
+          },
+          "lpFeePct": {
+            "type": "number"
+          },
+          "lock": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "created_at": {
+            "type": "integer"
+          },
+          "last_swap_at": {
+            "type": "integer"
+          }
+        },
+        "additionalProperties": true
+      }
+    }
+  }
+}

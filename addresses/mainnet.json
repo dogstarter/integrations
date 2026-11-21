@@ -1,0 +1,8 @@
+{
+  "chainId": null,
+  "name": "DogeOS",
+  "rpc": null,
+  "explorer": null,
+  "note": "Published at the DogeOS mainnet launch (Dogstarter Contracts v1.0). Until then, do not trust any address that claims to be a Dogstarter mainnet contract.",
+  "contracts": {}
+}
